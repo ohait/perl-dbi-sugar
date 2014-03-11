@@ -291,6 +291,7 @@ L<http://github.com/ohait/perl-dbi-sugar>
 
 =head1 ACKNOWLEDGEMENTS
 
+Tadeusz 'tadzik' Sosnierz - to convince me to release this module
 
 =head1 LICENSE AND COPYRIGHT
 
