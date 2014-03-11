@@ -24,6 +24,9 @@ our @EXPORT = qw(
    SELECT_ROW
    SQL_DO
    INSERT
+   UPDATE
+   DELETE
+   INSERT_UPDATE
 );
 
 =head1 SYNOPSIS
@@ -258,6 +261,56 @@ sub INSERT($$) {
     my $sth = $DBH->prepare($stm);
     return $sth->execute(@binds);
 }
+
+=head2 UPDATE (NIY)
+
+    UPDATE myTable => {
+        id => $id
+    } => {
+        name => $name, 
+        x => ['x+?', $y],
+    };
+
+=cut
+
+sub UPDATE($$$) {
+    my ($tab, $where, $set) = @_;
+    die "NIY";
+}
+
+=head2 INSERT_UPDATE (NIY)
+
+    INSERT_UPDATE myTable => {
+        id => $id,
+        name => $name,
+        ct => $inc,
+        last_update => ['NOW()'],
+    } => {
+        ct => ['ct+?', $inc],
+        last_update => ['NOW()'],
+    };
+
+=cut
+
+sub INSERT_UPDATE($$$) {
+    my ($tab, $insert, $update) = @_;
+    die "NIY";
+}
+
+=head2 DELETE (NIY)
+
+    DELETE myTable => {
+        status => 'to_delete',
+    };
+
+=cut
+
+sub DELETE($$) {
+    my ($tab, $where) = @_;
+    die "NIY";
+}
+
+sub 
 
 =head1 AUTHOR
 
