@@ -69,6 +69,18 @@ sub factory(&) {
     ($FACTORY) = @_;
 }
 
+=head2 dbh
+
+    my $dbh = DBI::Sugar::dbh();
+
+invoke the factory and return a DBH
+
+=cut
+
+sub dbh() {
+    $FACTORY->();
+}
+
 =head1 EXPORT
 
 =head2 TX

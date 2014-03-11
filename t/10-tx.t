@@ -36,6 +36,7 @@ EXPECT {
     is($NAME, 'begin_work', 'begin_work');
 };
 my $out = TX {
+    is(DBI::Sugar::dbh(), $mock, 'dbh');
     EXPECT {
         is($NAME, 'commit', 'commit');
     };
