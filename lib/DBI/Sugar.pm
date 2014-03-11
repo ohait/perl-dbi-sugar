@@ -290,6 +290,10 @@ sub UPDATE($$$) {
         last_update => ['NOW()'],
     };
 
+TODO: detect different backends and use specific code?
+(mysql: insert ... on duplicate key update)
+see also: http://en.wikipedia.org/wiki/Merge_(SQL)
+
 =cut
 
 sub INSERT_UPDATE($$$) {
