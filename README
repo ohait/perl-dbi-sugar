@@ -11,7 +11,8 @@ DBI-Sugar
         # select some rows
         my %rows = SELECT {
             $_{id} => join ' ', $_{name}, $_{surname};
-        } "id, name, surname FROM people WHERE age >= ? AND age < ? FOR UPDATE" => [18,25];
+        } "id, name, surname FROM people WHERE age >= ? AND age < ?"
+        => [18,25];
 
         SQL_DO "DELETE FROM myTab ORDER BY id ASC LIMIT ?" => [1];
 
