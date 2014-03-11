@@ -41,17 +41,8 @@ perldoc command.
 
 You can also look for information at:
 
-    RT, CPAN's request tracker (report bugs here)
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=DBI-Sugar
-
-    AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/DBI-Sugar
-
-    CPAN Ratings
-        http://cpanratings.perl.org/d/DBI-Sugar
-
-    Search CPAN
-        http://search.cpan.org/dist/DBI-Sugar/
+    GitHub
+        http://github.com/ohait/perl-dbi-sugar
 
 
 LICENSE AND COPYRIGHT

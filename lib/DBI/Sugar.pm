@@ -270,21 +270,9 @@ You can also look for information at:
 
 =over 4
 
-=item * RT: CPAN's request tracker (report bugs here)
+=item * GitHub
 
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=DBI-Sugar>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/DBI-Sugar>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/DBI-Sugar>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/DBI-Sugar/>
+L<http://github.com/ohait/perl-dbi-sugar>
 
 =back
 
