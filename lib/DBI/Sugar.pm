@@ -314,8 +314,6 @@ sub DELETE($$) {
     die "NIY";
 }
 
-sub 
-
 =head1 AUTHOR
 
 Francesco Rivetti, C<< <oha at oha.it> >>
