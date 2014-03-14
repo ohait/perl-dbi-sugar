@@ -109,6 +109,21 @@ How to quickly get data from DB and trasform it:
 
 set the connection factory that will be used by TX
 
+it's possible to add handlers for when the connection will be released:
+
+    DBI::Sugar::factory {
+        return $dbh,
+            release => sub { ... },
+    };
+
+    DBI::Sugar::factory {
+        return $dbh,
+            commit => sub { ... },
+            rollback => sub { ... },
+    };
+
+when a commit happen, the C<commit> sub or the C<release> sub is invoked. similarly for rollback
+
 =cut
 
 our $FACTORY;
