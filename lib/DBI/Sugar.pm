@@ -151,9 +151,10 @@ if the code dies, then the transaction is rollbacked and the error is "rethrown"
 
 =cut
 
-=head2 TX
+=head2 TX, TX_NEW
 
     TX { ... };
+    TX_NEW { ... };
 
 retrieve a DBH using the factory, and open a transaction (begin_work) on it.
 
@@ -161,12 +162,27 @@ the execute the given code. if the code returns the transaction is committed.
 
 if the code dies, then the transaction is rollbacked and the error is rethrown.
 
-TODO: add support for try/catch modules
+The only difference from C<TX> and C<TX_NEW> is that TX will die if already in a transaction.
+
+Note: normally, for TX_NEW to work properly, a different DBH is required, and so the factory
+you provided should handle this.
+
+TODO: consider to use savepoints if the database allows it.
 
 =cut
 
 sub TX(&) {
+    $DBH and die "already in a transaction";
+    _tx(@_);
+}
+
+sub TX_NEW(&) {
+    _tx(@_);
+}
+
+sub _tx {
     my ($code) = @_;
+
     local $DBH;
     local %OPTS;
     _make();
