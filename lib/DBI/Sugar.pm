@@ -241,6 +241,41 @@ column name)
 
 the result of the code block is returned as in a C<map { ... }>
 
+
+Note: "SELECT " is prepended to the queries automatically.
+
+
+=head3 why a map-like?
+
+Databases drivers are designed to return data while fetching more on the backend. On some databases you
+can even specify to the optimizer you want the first row as fast as possible, instead of being fast
+to fetch all the data.
+
+It's generally better then to just use the data while fetched, instead of fetching the whole data first
+and then iterating over it.
+
+Normally, while using DBI, you will end up writing code like:
+
+    my $sth = $dbh->prepare("SELECT * FROM myTab WHERE type = ?");
+    $sth->execute($type);
+    while(my $row = $sth->fetchrows_hashref()) {
+        IMPORTANT
+        STUFF
+        HERE
+    } 
+    $sth->finish
+
+Using DBI::Sugar it will become:
+
+    SELECT {
+        IMPORTANT
+        STUFF
+        HERE
+    } "* FROM myTab WHERE type = ?"
+    =>[$type];
+
+
+
 =cut
 
 sub SELECT(&$$) {
