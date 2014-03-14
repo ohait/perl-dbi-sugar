@@ -68,6 +68,37 @@ How to quickly get data from DB and trasform it:
     my %h = SELECT { @_ } "key, value FROM myTable" => [];
 
 
+=head2 A Micro Connection Pooler
+
+    my @conns;
+    DBI::Sugar::factory {
+        my $dbh = shift(@conns) // DBI->connect('dbi:mysql:oha', 'oha', undef, {
+                RaiseError => 1,
+            });
+        return $dbh,
+        release => sub {
+            push @conns, $dbh;
+        };
+    };
+
+=head2 A slightly better Micro Connection Pooler
+
+    my @conns;
+    DBI::Sugar::factory {
+        my $slot = shift @conns;
+        $slot //= do {
+            my $dbh = DBI->connect('dbi:mysql:oha', 'oha', undef, {
+                    RaiseError => 1,
+                });
+            [$dbh, 0];
+        };
+        $slot->[1]++;
+        return $slot->[0],
+        commit => sub {
+            $slot->[1]<3 and push @conns, $slot;
+        };
+    };
+
 =head1 METHODS
 
 =head2 factory
@@ -82,9 +113,17 @@ set the connection factory that will be used by TX
 
 our $FACTORY;
 our $DBH;
+our %OPTS;
 
 sub factory(&) {
     ($FACTORY) = @_;
+}
+
+sub _make() {
+    ($DBH, %OPTS) = $FACTORY->();
+    $DBH or die "factory returned a null connection";
+    $OPTS{commit} //= $OPTS{release} // sub {};
+    $OPTS{rollback} //= $OPTS{release} // sub {};
 }
 
 =head2 dbh
@@ -128,8 +167,10 @@ TODO: add support for try/catch modules
 
 sub TX(&) {
     my ($code) = @_;
-    local $DBH = $FACTORY->();
-    $DBH or die "factory returned a null connection";
+    local $DBH;
+    local %OPTS;
+    _make();
+
     $DBH->begin_work();
     my @out;
     my $wa = wantarray;
@@ -147,10 +188,12 @@ sub TX(&) {
 
     if ($ok) {
         $DBH->commit();
+        $OPTS{commit}->();
         return @out;
     }
     else {
         $DBH->rollback();
+        $OPTS{rollback}->();
         die $err;
     }
 }
