@@ -76,12 +76,13 @@ sub factory(&) {
 
     my $dbh = DBI::Sugar::dbh();
 
-invoke the factory and return a DBH
+return the current DBH (as in, the one in the current transaction, that
+would be used by the next statement)
 
 =cut
 
 sub dbh() {
-    $FACTORY->();
+    $DBH;
 }
 
 =head1 EXPORT
