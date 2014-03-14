@@ -177,6 +177,9 @@ the execute the given code. if the code returns the transaction is committed.
 
 if the code dies, then the transaction is rollbacked and the error is rethrown.
 
+At this moment, it's mandatory to have an open transaction, otherwise any db operations
+will fail.
+
 The only difference from C<TX> and C<TX_NEW> is that TX will die if already in a transaction.
 
 Note: normally, for TX_NEW to work properly, a different DBH is required, and so the factory
