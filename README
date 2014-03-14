@@ -9,14 +9,23 @@ DBI-Sugar
     # open a new transaction
     TX {
         # select some rows
-        my %rows = SELECT {
+        my %rows = SELECT "id, name, surname
+            FROM people WHERE age >= ? AND age < ?"
+        => [18,25]
+        => sub {
             $_{id} => join ' ', $_{name}, $_{surname};
-        } "id, name, surname FROM people WHERE age >= ? AND age < ?"
-        => [18,25];
+        };
 
         SQL_DO "DELETE FROM myTab ORDER BY id ASC LIMIT ?" => [1];
 
+        my $next;
+        TX_NEW {
+            (undef, $next) = SELECT_ROW "next FROM ids WHERE type = ? FOR UPDATE" => [$type];
+            SQL_DO "UPDATE ids SET next = next + 1 WHERE type = ?" => [$type];
+        };
+
         INSERT myTab => {
+            id => $next,
             a => "Foo",
             b => "Bar",
         };
