@@ -20,7 +20,8 @@ DBI-Sugar
 
         my $next;
         TX_NEW {
-            (undef, $next) = SELECT_ROW "next FROM ids WHERE type = ? FOR UPDATE" => [$type];
+            (undef, $next) = SELECT_ROW "next FROM ids WHERE type = ?
+                FOR UPDATE" => [$type];
             SQL_DO "UPDATE ids SET next = next + 1 WHERE type = ?" => [$type];
         };
 
