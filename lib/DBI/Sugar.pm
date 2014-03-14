@@ -233,9 +233,9 @@ sub SELECT(&$$) {
 
     my @caller = caller(); my $stm = "-- DBI::Sugar::SELECT() at $caller[1]:$caller[2]\nSELECT $query";
 
-    my $dbh = $DBH//$FACTORY->();
+    $DBH or die "not in a transaction";
 
-    my $sth = $dbh->prepare($stm);
+    my $sth = $DBH->prepare($stm);
     $sth->execute(@$binds);
     my @out;
     my @NAMES = @{$sth->{NAME}};
@@ -277,9 +277,9 @@ sub SELECT_ROW($$) {
 
     my @caller = caller(); my $stm = "-- DBI::Sugar::SELECT_ROW() at $caller[1]:$caller[2]\nSELECT $query";
 
-    my $dbh = $DBH//$FACTORY->();
+    $DBH or die "not in a transaction";
 
-    my $sth = $dbh->prepare($stm);
+    my $sth = $DBH->prepare($stm);
     $sth->execute(@$binds);
 
     my $row = $sth->fetchrow_hashref();
