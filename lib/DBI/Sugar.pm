@@ -231,7 +231,9 @@ sub _tx {
 
 =head2 SELECT
 
-    SELECT { ... } "field1, field2 FROM tab1, tab2 WHERE cond=? OR cond=?" => [@binds];
+    SELECT "field1, field2 FROM tab WHERE cond = ?" => [$cond] => sub {
+        ...
+    };
 
 performs a select on the database. the query string is passed as is, only prepending C<"SELECT "> at
 the beginning.
@@ -256,8 +258,10 @@ and then iterating over it.
 
 Normally, while using DBI, you will end up writing code like:
 
-    my $sth = $dbh->prepare("SELECT * FROM myTab WHERE type = ?");
-    $sth->execute($type);
+    my $sth = $dbh->prepare("SELECT "col1, col2, col3, col4
+        FROM tab1 LEFT JOIN tab2 ON tab1.left = tab2.right
+        WHERE type = ? AND x > ? AND x < ?");
+    $sth->execute($type, $min, $max);
     while(my $row = $sth->fetchrows_hashref()) {
         IMPORTANT
         STUFF
@@ -267,19 +271,21 @@ Normally, while using DBI, you will end up writing code like:
 
 Using DBI::Sugar it will become:
 
-    SELECT {
+    SELECT "col1, col2, col3, col4
+        FROM tab1 LEFT JOIN tab2 ON tab1.left = tab2.right
+        WHERE type = ? AND x > ? AND x < ?"
+    => [$type, $min, $max]
+    => sub {
         IMPORTANT
         STUFF
         HERE
-    } "* FROM myTab WHERE type = ?"
-    =>[$type];
-
+    }
 
 
 =cut
 
-sub SELECT(&$$) {
-    my ($code, $query, $binds) = @_;
+sub SELECT($$&) {
+    my ($query, $binds, $code) = @_;
 
     my @caller = caller(); my $stm = "-- DBI::Sugar::SELECT() at $caller[1]:$caller[2]\nSELECT $query";
 

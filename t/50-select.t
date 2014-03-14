@@ -66,7 +66,9 @@ TX {
         is($NAME, 'finish', 'finish');
     };
 
-    my %m = SELECT { $_{id} => $_{a} } "id, a FROM dbi_sugar WHERE id IN (?,?,?)" => [1,2,3];
+    my %m = SELECT "id, a FROM dbi_sugar WHERE id IN (?,?,?)" => [1,2,3] => sub {
+        $_{id} => $_{a};
+    };
 
     is(scalar(keys %m), 2, '2 entries');
     is($m{1}, 'a', '1=>a');
@@ -96,7 +98,7 @@ TX {
         is($NAME, 'finish', 'finish');
     };
 
-    my $ct = SELECT { } "123" => [1,2,3];
+    my $ct = SELECT "123" => [1,2,3] => sub {};
 
     is($ct, 2, '2 rows');
 
