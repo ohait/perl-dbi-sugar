@@ -53,6 +53,21 @@ our @EXPORT = qw(
     };
     # commit if it returns, rollback if it dies
 
+=head1 DESCRIPTION
+
+=head2 SELECT {...}
+
+How to quickly get data from DB and trasform it:
+
+    my @AoH = SELECT { \%_ } "* FROM myTable" => [];
+
+    my @AoA = SELECT { \@_ } "* FROM myTable" => [];
+
+    my %HoA = SELECT { $_{id} => \@_ } "* FROM myTable" => [];
+
+    my %h = SELECT { @_ } "key, value FROM myTable" => [];
+
+
 =head1 METHODS
 
 =head2 factory
@@ -194,7 +209,7 @@ fetch a single row from the database, and returns it as an hash
 
 if no rows are found, the hash will be empty
 
-it will die if more than one rows are found.
+IMPORTANT: it will die if more than one rows are found.
 
 =cut
 
