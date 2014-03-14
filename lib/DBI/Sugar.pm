@@ -159,7 +159,9 @@ sub SELECT(&$$) {
 
     my @caller = caller(); my $stm = "-- DBI::Sugar::SELECT() at $caller[1]:$caller[2]\nSELECT $query";
 
-    my $sth = $DBH->prepare($stm);
+    my $dbh = $DBH//$FACTORY->();
+
+    my $sth = $dbh->prepare($stm);
     $sth->execute(@$binds);
     my @out;
     my @NAMES = @{$sth->{NAME}};
@@ -201,7 +203,9 @@ sub SELECT_ROW($$) {
 
     my @caller = caller(); my $stm = "-- DBI::Sugar::SELECT_ROW() at $caller[1]:$caller[2]\nSELECT $query";
 
-    my $sth = $DBH->prepare($stm);
+    my $dbh = $DBH//$FACTORY->();
+
+    my $sth = $dbh->prepare($stm);
     $sth->execute(@$binds);
 
     my $row = $sth->fetchrow_hashref();
@@ -227,6 +231,8 @@ sub SQL_DO($$) {
 
     my @caller = caller(); my $stm = "-- DBI::Sugar::SQL_DO() at $caller[1]:$caller[2]\n$query";
 
+    $DBH or die "not in a transaction";
+
     my $sth = $DBH->prepare($stm);
     return $sth->execute(@$binds);
 }
@@ -248,6 +254,8 @@ sub INSERT($$) {
     my ($tab, $data) = @_;
 
     my @caller = caller(); my $stm = "-- DBI::Sugar::INSERT() at $caller[1]:$caller[2]\n";
+
+    $DBH or die "not in a transaction";
 
     my @cols;
     my @binds;
