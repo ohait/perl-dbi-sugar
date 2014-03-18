@@ -6,7 +6,7 @@ use warnings;
 
 =head1 NAME
 
-DBI::Sugar - The great new DBI::Sugar!
+DBI::Sugar - Add some sugar to this DBI
 
 =head1 VERSION
 
@@ -26,7 +26,6 @@ our @EXPORT = qw(
    INSERT
    UPDATE
    DELETE
-   INSERT_UPDATE
 );
 
 =head1 SYNOPSIS
@@ -190,6 +189,10 @@ TODO: consider to use savepoints if the database allows it.
 =cut
 
 sub TX(&) {
+    _TX(@_);
+}
+
+sub _TX {
     $DBH and die "already in a transaction";
     _tx(@_);
 }
@@ -288,7 +291,11 @@ Using DBI::Sugar it will become:
 =cut
 
 sub SELECT($$&) {
-    my ($query, $binds, $code) = @_;
+    _SELECT(@_, sub {});
+}
+
+sub _SELECT {
+    my ($query, $binds, $code, $hook) = @_;
 
     my @caller = caller(); my $stm = "-- DBI::Sugar::SELECT() at $caller[1]:$caller[2]\nSELECT $query";
 
@@ -300,6 +307,7 @@ sub SELECT($$&) {
     my @NAMES = @{$sth->{NAME}};
 
     while(my $row = $sth->fetchrow_arrayref) {
+        $hook->($row, $sth, $DBH);
         my @v = @$row;
         my $i = 0;
         local %_ = map { $_ => $v[$i++] } @NAMES;
@@ -332,23 +340,17 @@ IMPORTANT: it will die if more than one rows are found.
 =cut
 
 sub SELECT_ROW($$) {
-    my ($query, $binds) = @_;
+    _SELECT_ROW(@_, sub {});
+}
 
-    my @caller = caller(); my $stm = "-- DBI::Sugar::SELECT_ROW() at $caller[1]:$caller[2]\nSELECT $query";
-
-    $DBH or die "not in a transaction";
-
-    my $sth = $DBH->prepare($stm);
-    $sth->execute(@$binds);
-
-    my $row = $sth->fetchrow_hashref();
-
-    if ($sth->fetchrow_hashref) {
-        die "expected 1 row, got more: $stm";
-    }
-    $sth->finish;
-
-    return %$row;
+sub _SELECT_ROW {
+    my ($stm, $binds, $hook) = @_;
+    my $out;
+    _SELECT($stm, $binds, sub {
+            die "expected 1 row, got more: $stm" if $out;
+            $out = {%_};
+        }, $hook);
+    return $out ? %$out : ();
 }
 
 =head2 SQL_DO
@@ -420,28 +422,6 @@ sub UPDATE($$$) {
     die "NIY";
 }
 
-=head2 INSERT_UPDATE (NIY)
-
-    INSERT_UPDATE myTable => {
-        id => $id,
-        name => $name,
-        ct => $inc,
-        last_update => ['NOW()'],
-    } => {
-        ct => ['ct+?', $inc],
-        last_update => ['NOW()'],
-    };
-
-TODO: detect different backends and use specific code?
-(mysql: insert ... on duplicate key update)
-see also: http://en.wikipedia.org/wiki/Merge_(SQL)
-
-=cut
-
-sub INSERT_UPDATE($$$) {
-    my ($tab, $insert, $update) = @_;
-    die "NIY";
-}
 
 =head2 DELETE (NIY)
 
