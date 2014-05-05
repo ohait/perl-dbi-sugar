@@ -19,7 +19,9 @@ our $VERSION = '0.01';
 use base 'Exporter';
 
 our @EXPORT = qw(
-   TX 
+   TX
+   TX_NEW
+   TX_REQUIRED
    SELECT
    SELECT_ROW
    SQL_DO
@@ -44,7 +46,7 @@ our @EXPORT = qw(
         } "id, a, b FROM myTab WHERE status = ? FOR UPDATE" => ['ok'];
 
         SQL_DO "DELETE FROM myTab ORDER BY id ASC LIMIT ?" => [1];
-        
+
         INSERT myTab => {
             a => "Foo",
             b => "Bar",
@@ -199,6 +201,10 @@ sub _TX {
 
 sub TX_NEW(&) {
     _tx(@_);
+}
+
+sub TX_REQUIRED() {
+    $DBH or die "not in a transaction";
 }
 
 sub _tx {
