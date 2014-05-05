@@ -135,7 +135,37 @@ sub factory(&) {
     ($FACTORY) = @_;
 }
 
+sub pool(&%) {
+    my ($factory, %opts)  = @_;
+
+    my @slots;
+    my $max_age = $opts{max_age} // die "you must specify a {max_age}";
+    my $max_uses = $opts{max_uses} // die "you must specify a {max_uses}";
+    $FACTORY = sub {
+        my $slot;
+        while (my $s = shift @slots)
+        {
+            next if $s->{created} < time()-$max_age;
+            $slot = $s;
+            last;
+        }
+
+        $slot //= {
+            dbh => $factory->(),
+            created => time(),
+            uses => 0,
+        };
+        $slot->{uses}++;
+
+        return $slot->{dbh},
+            commit => sub {
+                push @slots, $slot if $slot->{uses} < $max_uses;
+            };
+    };
+}
+
 sub _make() {
+    $FACTORY or die "you must set DBI::Sugar::factory { ... } first";
     ($DBH, %OPTS) = $FACTORY->();
     $DBH or die "factory returned a null connection";
     $OPTS{commit} //= $OPTS{release} // sub {};
