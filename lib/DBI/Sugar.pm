@@ -437,7 +437,7 @@ sub INSERT($$) {
     $stm .= "INSERT INTO $tab (".
         join(', ', @cols).") VALUES (".
         join(', ', map { '?' } @cols).")";
-    
+
     my $sth = $DBH->prepare($stm);
     return $sth->execute(@binds);
 }
@@ -445,17 +445,54 @@ sub INSERT($$) {
 =head2 UPDATE (NIY)
 
     UPDATE myTable => {
-        id => $id
+        domain => $domain,
+        port => $port,
     } => {
-        name => $name, 
-        x => ['x+?', $y],
+        name => $name,
+        ct => ['ct+?', $y],
     };
+
+The above will be converted in
+
+    UPDATE myTable SET name = ?, ct = ct+? WHERE domain = ? AND port = ?
+
+Note: conditions are always joined in AND, for complex conditions use a SQL_DO
 
 =cut
 
 sub UPDATE($$$) {
     my ($tab, $where, $set) = @_;
-    die "NIY";
+
+    my @caller = caller(); my $stm = "-- DBI::Sugar::UPDATE() at $caller[1]:$caller[2]\n";
+
+    $DBH or die "not in a transaction";
+
+    my @sets;
+    my @conds;
+    my @binds;
+
+    for my $k (keys %$set) {
+        my $v = $set->{$k};
+        if (ref $v) {
+            my ($l, $r) = @$v;
+            push @sets, "$k = $l";
+            push @binds, $r;
+        } else {
+            push @sets, "$k = ?";
+            push @binds, $v;
+        }
+    }
+
+    for my $k (keys %$where) {
+        my $v = $where->{$k};
+        push @conds, "$k = ?";
+        push @binds, $v;
+    }
+
+    $stm .= "UPDATE $tab SET ".join(', ', @sets)." WHERE ".join(' AND ', @conds);
+
+    my $sth = $DBH->prepare($stm);
+    return $sth->execute(@binds);
 }
 
 
