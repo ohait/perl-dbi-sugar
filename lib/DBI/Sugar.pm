@@ -340,7 +340,7 @@ sub _SELECT {
     my $sth = $DBH->prepare($stm);
     $sth->execute(@$binds);
     my @out;
-    my @NAMES = @{$sth->{NAME}};
+    my @NAMES = @{$sth->{NAME}//[]};
 
     while(my $row = $sth->fetchrow_arrayref) {
         $hook->($row, $sth, $DBH);
