@@ -434,6 +434,7 @@ sub INSERT($$) {
         push @cols, $key; 
         push @binds, $data->{$key};
     }
+    @cols or die "you must specify at least one field";
     $stm .= "INSERT INTO $tab (".
         join(', ', @cols).") VALUES (".
         join(', ', map { '?' } @cols).")";
