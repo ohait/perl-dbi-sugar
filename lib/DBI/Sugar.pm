@@ -475,9 +475,9 @@ sub UPDATE($$$) {
     for my $k (keys %$set) {
         my $v = $set->{$k};
         if (ref $v) {
-            my ($l, $r) = @$v;
+            my ($l, @r) = @$v;
             push @sets, "$k = $l";
-            push @binds, $r;
+            push @binds, @r;
         } else {
             push @sets, "$k = ?";
             push @binds, $v;
