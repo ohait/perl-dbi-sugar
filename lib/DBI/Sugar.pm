@@ -334,7 +334,7 @@ sub _SELECT {
     my ($query, $binds, $code, $hook) = @_;
     $query =~ s{\s+}{ }g;
 
-    my @caller = caller();
+    my @caller = caller(1);
     my $stm = "-- DBI::Sugar::SELECT() at $caller[1]:$caller[2]\nSELECT $query";
 
     $DBH or die "not in a transaction";
