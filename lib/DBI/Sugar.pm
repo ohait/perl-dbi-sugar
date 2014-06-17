@@ -221,15 +221,17 @@ TODO: consider to use savepoints if the database allows it.
 =cut
 
 sub TX(&) {
-    _TX(@_);
+    _tx(@_);
 }
 
 sub _TX {
-    $DBH and die "already in a transaction";
+    #$DBH and die "already in a transaction";
     _tx(@_);
 }
 
 sub TX_NEW(&) {
+    local $DBH;
+    local %OPTS;
     _tx(@_);
 }
 
@@ -240,8 +242,12 @@ sub TX_REQUIRED() {
 sub _tx {
     my ($code) = @_;
 
-    local $DBH;
-    local %OPTS;
+    if ($DBH) {
+        return $code->();
+    }
+
+    local $DBH = $DBH;
+    local %OPTS = %OPTS;
     _make();
 
     $DBH->begin_work();
