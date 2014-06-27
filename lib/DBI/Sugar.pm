@@ -437,15 +437,25 @@ sub INSERT($$) {
     $DBH or die "not in a transaction";
 
     my @cols;
+    my @placeholders;
     my @binds;
     for my $key (keys %$data) {
-        push @cols, $key; 
-        push @binds, $data->{$key};
+        my $val = $data->{$key};
+        if ("ARRAY" eq ref $val) {
+            my ($p, @v) = @$val;
+            push @cols, $key;
+            push @placeholders, $p;
+            push @binds, @v;
+        } else {
+            push @cols, $key;
+            push @placeholders, '?';
+            push @binds, $val;
+        }
     }
     @cols or die "you must specify at least one field";
     $stm .= "INSERT INTO $tab (".
         join(', ', @cols).") VALUES (".
-        join(', ', map { '?' } @cols).")";
+        join(', ', @placeholders).")";
 
     my $sth = $DBH->prepare($stm);
     return $sth->execute(@binds);
