@@ -384,7 +384,13 @@ IMPORTANT: it will die if more than one rows are found.
 =cut
 
 sub SELECT_ROW($$) {
-    _SELECT_ROW(@_, sub {});
+    my ($stm, $binds) = @_;
+    my $out;
+    _SELECT($stm, $binds, sub {
+            die "expected 1 row, got more: $stm" if $out;
+            $out = {%_};
+        }, sub {});
+    return $out ? %$out : ();
 }
 
 sub _SELECT_ROW {
