@@ -467,7 +467,7 @@ sub INSERT($$) {
     return $sth->execute(@binds);
 }
 
-=head2 UPDATE (NIY)
+=head2 UPDATE
 
     UPDATE myTable => {
         domain => $domain,
