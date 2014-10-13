@@ -428,7 +428,7 @@ sub SQL_DO($$) {
     INSERT myTable => {
         id => $id,
         col1 => $col1,
-        col2 => $col2, 
+        col2 => $col2,
     };
 
 Insert into the given table, the given data;
