@@ -419,7 +419,7 @@ sub SQL_DO($$) {
     $DBH or die "not in a transaction";
 
     my $sth = $DBH->prepare($stm);
-    return $sth->execute(@$binds);
+    return 0+$sth->execute(@$binds);
 }
 
 
@@ -517,7 +517,7 @@ sub UPDATE($$$) {
     $stm .= "UPDATE $tab SET ".join(', ', @sets)." WHERE ".join(' AND ', @conds);
 
     my $sth = $DBH->prepare($stm);
-    return $sth->execute(@binds);
+    return 0+$sth->execute(@binds);
 }
 
 
