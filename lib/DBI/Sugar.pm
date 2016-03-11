@@ -27,6 +27,7 @@ our @EXPORT = qw(
    SQL_DO
    INSERT
    UPDATE
+   UPSERT
    DELETE
 );
 
@@ -532,6 +533,34 @@ sub UPDATE($$$) {
 sub DELETE($$) {
     my ($tab, $where) = @_;
     die "NIY";
+}
+
+
+=head2 UPSERT (WIP)
+
+    UPSERT myTable => {
+        id => $id,
+    } => {
+        count => ['count + ?', 1],
+    } => {
+        id => $id,
+        count => 1,
+        state => 'init',
+    };
+
+it performs and update, and if it fails (no rows changed) performs an insert
+
+it _might_ takes advantage of DBMS specific functions
+
+return the number of rows changed by the update (which means 0 if it performs an insert)
+
+=cut
+
+sub UPSERT($$$$) {
+    my ($tab, $where, $set, $insert) = @_;
+    my $ct = UPDATE($tab, $where, $set);
+    $ct or INSERT($tab, $insert);
+    return $ct;
 }
 
 =head1 AUTHOR
