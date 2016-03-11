@@ -542,13 +542,17 @@ sub DELETE($$) {
         id => $id,
     } => {
         count => ['count + ?', 1],
+        last_mod => ['NOW()'],
     } => {
-        id => $id,
-        count => 1,
-        state => 'init',
+        count => 1, # override
+        created => ['NOW()'],
+        # id and last_mod are set as above
     };
 
 it performs and update, and if it fails (no rows changed) performs an insert
+
+the insert will have all the fields set in the update where condition, overriden
+by the set, and then again overriden by the last block.
 
 it _might_ takes advantage of DBMS specific functions
 
@@ -559,7 +563,7 @@ return the number of rows changed by the update (which means 0 if it performs an
 sub UPSERT($$$$) {
     my ($tab, $where, $set, $insert) = @_;
     my $ct = UPDATE($tab, $where, $set);
-    $ct or INSERT($tab, $insert);
+    $ct or INSERT($tab, {%$where, %$set, %$insert});
     return $ct;
 }
 
