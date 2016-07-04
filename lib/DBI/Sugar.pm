@@ -130,6 +130,7 @@ when a commit happen, the C<commit> sub or the C<release> sub is invoked. simila
 
 our $FACTORY;
 our $DBH;
+our $PID = $$;
 our %OPTS;
 
 sub factory(&) {
@@ -140,10 +141,14 @@ sub pool(&%) {
     my ($factory, %opts)  = @_;
 
     my @slots;
+    my $pid = $$;
     my $max_age = $opts{max_age} // die "you must specify a {max_age}";
     my $max_uses = $opts{max_uses} // die "you must specify a {max_uses}";
     $FACTORY = sub {
         my $slot;
+        if ($pid != $$) {
+            @slots = (); # pool will be recreated
+        }
         while (my $s = shift @slots)
         {
             next if $s->{created} < time()-$max_age;
@@ -155,6 +160,7 @@ sub pool(&%) {
             dbh => $factory->(),
             created => time(),
             uses => 0,
+            pid => $$,
         };
         $slot->{uses}++;
 
@@ -169,8 +175,10 @@ sub _make() {
     $FACTORY or die "you must set DBI::Sugar::factory { ... } first";
     ($DBH, %OPTS) = $FACTORY->();
     $DBH or die "factory returned a null connection";
+    $DBH->{Active} or die "factory returned a non-active connection";
+    #print "[$$] _make() => $DBH ($DBH->{AutoCommit})\n";
     $OPTS{commit} //= $OPTS{release} // sub {};
-    $OPTS{rollback} //= $OPTS{release} // sub {};
+    $OPTS{rollback} //= $OPTS{release} // sub {}
 }
 
 =head2 dbh
@@ -244,12 +252,15 @@ sub _tx {
     my ($code) = @_;
 
     if ($DBH) {
+        $PID == $$ or die "forked?";
         return $code->();
     }
 
     local $DBH = $DBH;
+    local $PID = $$;
     local %OPTS = %OPTS;
     _make();
+    $PID = $$;
 
     $DBH->begin_work();
     my @out;
@@ -339,6 +350,7 @@ sub SELECT($$&) {
 
 sub _SELECT {
     my ($query, $binds, $code, $hook) = @_;
+    $PID == $$ or die "forked?";
     $query =~ s{\s+}{ }g;
 
     my @caller = caller(1);
@@ -347,7 +359,7 @@ sub _SELECT {
     $DBH or die "not in a transaction";
 
     my $sth = $DBH->prepare($stm);
-    $sth->execute(@$binds);
+    $sth->execute(@$binds) or die "what!: $! ".$DBH::errstr;
     my @out;
     my @NAMES = @{$sth->{NAME}//[]};
 
@@ -396,6 +408,7 @@ sub SELECT_ROW($$) {
 
 sub _SELECT_ROW {
     my ($stm, $binds, $hook) = @_;
+    $PID == $$ or die "forked?";
     my $out;
     _SELECT($stm, $binds, sub {
             die "expected 1 row, got more: $stm" if $out;
@@ -438,6 +451,7 @@ Insert into the given table, the given data;
 
 sub INSERT($$) {
     my ($tab, $data) = @_;
+    $PID == $$ or die "forked?";
 
     my @caller = caller(); my $stm = "-- DBI::Sugar::INSERT() at $caller[1]:$caller[2]\n";
 
@@ -488,6 +502,7 @@ Note: conditions are always joined in AND, for complex conditions use a SQL_DO
 
 sub UPDATE($$$) {
     my ($tab, $where, $set) = @_;
+    $PID == $$ or die "forked?";
 
     my @caller = caller(); my $stm = "-- DBI::Sugar::UPDATE() at $caller[1]:$caller[2]\n";
 
@@ -562,6 +577,7 @@ return the number of rows changed by the update (which means 0 if it performs an
 
 sub UPSERT($$$$) {
     my ($tab, $where, $set, $insert) = @_;
+    $PID == $$ or die "forked?";
     my $ct = UPDATE($tab, $where, $set);
     $ct or INSERT($tab, {%$where, %$set, %$insert});
     return $ct;
