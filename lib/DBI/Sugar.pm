@@ -547,7 +547,28 @@ sub UPDATE($$$) {
 
 sub DELETE($$) {
     my ($tab, $where) = @_;
-    die "NIY";
+
+    $PID == $$ or die "forked?";
+
+    my @caller = caller(); my $stm = "-- DBI::Sugar::UPDATE() at $caller[1]:$caller[2]\n";
+
+    $DBH or die "not in a transaction";
+
+    my @conds;
+    my @binds;
+
+    for my $k (keys %$where) {
+        my $v = $where->{$k};
+        push @conds, "$k = ?";
+        push @binds, $v;
+    }
+
+    $stm .= "DELETE FROM $tab WHERE ".join(' AND ', @conds);
+
+    my $sth = $DBH->prepare($stm);
+    my $ct = 0+$sth->execute(@binds);
+    #printf "DBG rows: %d\n", $sth->rows;
+    return $ct;
 }
 
 
