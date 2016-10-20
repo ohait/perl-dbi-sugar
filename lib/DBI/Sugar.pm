@@ -3,6 +3,7 @@ package DBI::Sugar;
 use 5.006;
 use strict;
 use warnings;
+use Data::Dumper;
 
 =head1 NAME
 
@@ -42,9 +43,10 @@ our @EXPORT = qw(
     # open a new transaction
     TX {
         # select some rows
-        my %rows = SELECT {
+        my %rows = SELECT "id, a, b FROM myTab WHERE status = ? FOR UPDATE"
+        => ['ok'] => sub {
             $_{id} => [$_{a}, $_{b}];
-        } "id, a, b FROM myTab WHERE status = ? FOR UPDATE" => ['ok'];
+        };
 
         SQL_DO "DELETE FROM myTab ORDER BY id ASC LIMIT ?" => [1];
 
@@ -61,13 +63,13 @@ our @EXPORT = qw(
 
 How to quickly get data from DB and trasform it:
 
-    my @AoH = SELECT { \%_ } "* FROM myTable" => [];
+    my @AoH = SELECT "* FROM myTable" => [] => sub { \%_ };
 
-    my @AoA = SELECT { \@_ } "* FROM myTable" => [];
+    my @AoA = SELECT "* FROM myTable" => [] => sub { \@_ };
 
-    my %HoA = SELECT { $_{id} => \@_ } "* FROM myTable" => [];
+    my %HoA = SELECT "* FROM myTable" => [] => sub { $_{id} => \@_ };
 
-    my %h = SELECT { @_ } "key, value FROM myTable" => [];
+    my %h = SELECT "key, value FROM myTable" => [] => sub { @_ };
 
 
 =head2 A Micro Connection Pooler
@@ -227,7 +229,17 @@ you provided should handle this.
 
 TODO: consider to use savepoints if the database allows it.
 
+=head TX_REQUIRED
+
+    TX_REQUIRED;
+
+dies there is no transaction. Useful to die earlier than executing a statement.
+
 =cut
+
+sub TX_REQUIRED() {
+    $DBH or die "not in a transaction";
+}
 
 sub TX(&) {
     _tx(@_);
@@ -244,9 +256,6 @@ sub TX_NEW(&) {
     _tx(@_);
 }
 
-sub TX_REQUIRED() {
-    $DBH or die "not in a transaction";
-}
 
 sub _tx {
     my ($code) = @_;
@@ -262,6 +271,7 @@ sub _tx {
     _make();
     $PID = $$;
 
+    #print gmtime()." [$$] BEGIN $DBH ($DBH->{AutoCommit})\n";
     $DBH->begin_work();
     my @out;
     my $wa = wantarray;
@@ -278,11 +288,13 @@ sub _tx {
     my $err = $@;
 
     if ($ok) {
+        #print gmtime()." [$$] COMMIT $DBH\n";
         $DBH->commit();
         $OPTS{commit}->();
         return @out;
     }
     else {
+        #print gmtime()." [$$] ROLLBACK $DBH\n";
         $DBH->rollback();
         $OPTS{rollback}->();
         die $err;
@@ -323,10 +335,8 @@ Normally, while using DBI, you will end up writing code like:
         WHERE type = ? AND x > ? AND x < ?");
     $sth->execute($type, $min, $max);
     while(my $row = $sth->fetchrows_hashref()) {
-        IMPORTANT
-        STUFF
-        HERE
-    } 
+        IMPORTANT STUFF HERE
+    }
     $sth->finish
 
 Using DBI::Sugar it will become:
@@ -336,9 +346,7 @@ Using DBI::Sugar it will become:
         WHERE type = ? AND x > ? AND x < ?"
     => [$type, $min, $max]
     => sub {
-        IMPORTANT
-        STUFF
-        HERE
+        IMPORTANT STUFF HERE
     }
 
 
@@ -515,7 +523,8 @@ sub UPDATE($$$) {
     for my $k (keys %$set) {
         my $v = $set->{$k};
         if (ref $v) {
-            my ($l, @r) = @$v;
+            my ($l, @r);
+            eval { ($l, @r) = @$v; 1 } or die "can't use '$v' as a value: ".Dumper($v);
             push @sets, "$k = $l";
             push @binds, @r;
         } else {
@@ -533,11 +542,13 @@ sub UPDATE($$$) {
     $stm .= "UPDATE $tab SET ".join(', ', @sets)." WHERE ".join(' AND ', @conds);
 
     my $sth = $DBH->prepare($stm);
-    return 0+$sth->execute(@binds);
+    my $ct = 0+$sth->execute(@binds);
+    #printf "DBG [%d], rows: %d\n", $ct, $sth->rows;
+    return $ct;
 }
 
 
-=head2 DELETE (NIY)
+=head2 DELETE
 
     DELETE myTable => {
         status => 'to_delete',
@@ -550,7 +561,7 @@ sub DELETE($$) {
 
     $PID == $$ or die "forked?";
 
-    my @caller = caller(); my $stm = "-- DBI::Sugar::UPDATE() at $caller[1]:$caller[2]\n";
+    my @caller = caller(); my $stm = "-- DBI::Sugar::DELETE() at $caller[1]:$caller[2]\n";
 
     $DBH or die "not in a transaction";
 
@@ -567,12 +578,11 @@ sub DELETE($$) {
 
     my $sth = $DBH->prepare($stm);
     my $ct = 0+$sth->execute(@binds);
-    #printf "DBG rows: %d\n", $sth->rows;
     return $ct;
 }
 
 
-=head2 UPSERT (WIP)
+=head2 UPSERT
 
     UPSERT myTable => {
         id => $id,

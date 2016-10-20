@@ -4,7 +4,7 @@
 use DBI::Sugar;
 
 DBI::Sugar::factory {
-    return DBI->connect(...); 
+    return DBI->connect(...);
 };
 
 # open a new transaction
