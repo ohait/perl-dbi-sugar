@@ -472,11 +472,11 @@ sub INSERT($$) {
         my $val = $data->{$key};
         if ("ARRAY" eq ref $val) {
             my ($p, @v) = @$val;
-            push @cols, $key;
+            push @cols, "`$key`";
             push @placeholders, $p;
             push @binds, @v;
         } else {
-            push @cols, $key;
+            push @cols, "`$key`";
             push @placeholders, '?';
             push @binds, $val;
         }
@@ -525,17 +525,17 @@ sub UPDATE($$$) {
         if (ref $v) {
             my ($l, @r);
             eval { ($l, @r) = @$v; 1 } or die "can't use '$v' as a value: ".Dumper($v);
-            push @sets, "$k = $l";
+            push @sets, "`$k` = $l";
             push @binds, @r;
         } else {
-            push @sets, "$k = ?";
+            push @sets, "`$k` = ?";
             push @binds, $v;
         }
     }
 
     for my $k (keys %$where) {
         my $v = $where->{$k};
-        push @conds, "$k = ?";
+        push @conds, "`$k` = ?";
         push @binds, $v;
     }
 
