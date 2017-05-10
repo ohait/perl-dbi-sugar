@@ -291,7 +291,11 @@ sub _tx {
         #print gmtime()." [$$] COMMIT $DBH\n";
         $DBH->commit();
         $OPTS{commit}->();
-        return @out;
+        if ($wa) {
+            return @out;
+        } else {
+            return $out[0];
+        }
     }
     else {
         #print gmtime()." [$$] ROLLBACK $DBH\n";
@@ -441,7 +445,7 @@ sub SQL_DO($$) {
     $DBH or die "not in a transaction";
 
     my $sth = $DBH->prepare($stm);
-    return 0+$sth->execute(@$binds);
+    return $sth->execute(@$binds);
 }
 
 

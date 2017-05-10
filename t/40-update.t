@@ -39,7 +39,7 @@ TX {
     EXPECT {
         is($NAME, 'prepare', 'prepare');
         like($_[0], qr/UPDATE.*myTab.*SET/s, 'statement');
-        like($_[0], qr/ct\s+=\s+?/s, 'set');
+        like($_[0], qr/`?ct`?\s+=\s+?/s, 'set');
         like($_[0], qr/AND/s, 'where with and');
         return $mock;
     };
