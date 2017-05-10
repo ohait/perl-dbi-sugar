@@ -31,6 +31,32 @@ TX {
         a => "Foo",
         b => "Bar",
     };
+
+    UPDATE myTab => {
+        id => $next,
+    } => {
+        ct => ['ct + ?', $inc],
+    }
+
+    # or even more sugar coating!
+
+    my $id = NEXT_ID myTab => 10;
+    # reserve 10 ids from table "ids" where name = 'myTab'
+    # returns the first, keep the other 9 in a pool
+
+    UPSERT myTab => {
+        # WHERE
+        key => $id,
+    } => {
+        # UPDATE
+        ct => ['ct + ?', $inc],
+        last_mod => ['NOW()'],
+    } => {
+        # INSERT
+        ct => $inc, # override ct
+        # last_mod is ok as in the update
+        created => ['NOW()'], # but created need to be set
+    }
 };
 # commit if it returns, rollback if it dies
 ```
