@@ -30,6 +30,7 @@ our @EXPORT = qw(
    UPDATE
    UPSERT
    DELETE
+   NEXT_ID
 );
 
 =head1 SYNOPSIS
@@ -616,6 +617,88 @@ sub UPSERT($$$$) {
     my $ct = UPDATE($tab, $where, $set);
     $ct or INSERT($tab, {%$where, %$set, %$insert});
     return $ct;
+}
+
+=head2 NEXT_ID
+
+    use DBI::SUGAR qw/:DEFAULT NEXT_ID/; # not exported by default
+
+    my $next_id = NEXT_ID myName => 5;
+
+It first checks if an ID is available in the "pool" for the given name, and returns it.
+
+Otherwise it creates a new TX, lock the table, fetches the next id from the table, updates the
+table adding 5 and returns the next, storing the extra ids in the pool for later use
+
+It is important to note that all this happens in a TX_NEW block! which means that even if the
+caller die and ROLLBACK, the changes on the id table are committed and won't clases with other
+transactions (they will be wasted)
+
+=cut
+
+our $NEXT_ID_CONF = {
+    next => {},
+    table => "ids",
+    name_field => "name",
+    next_field => "next",
+};
+
+sub NEXT_ID_settings {
+    my @out = map { $NEXT_ID_CONF->{$_} } qw/table name_field next_field/;
+    if (@_) {
+        my ($table, $name, $next) = @_;
+        $table =~ m{^\w+$} or die "invalid table name: '$table'";
+        $name =~ m{^\w+$} or die "invalid name field: '$name'";
+        $next =~ m{^\w+$} or die "invalid next field: '$next'";
+        $NEXT_ID_CONF->{table} = $table;
+        $NEXT_ID_CONF->{name_field} = $name;
+        $NEXT_ID_CONF->{next_field} = $next;
+    };
+    return @out;
+};
+
+sub NEXT_ID($$) {
+    my ($name, $size) = @_;
+    $size > 0 or die "invalid size: $size";
+    my $table = $NEXT_ID_CONF->{table};
+    my $ids = $NEXT_ID_CONF->{next}->{$table} //= {};
+
+    my $pool = $ids->{$name} //=
+    TX_NEW {
+        # fetching a new id should NOT be rollbackable, since other tx might need a new one in the meanwhile
+        # if a rollback occour, the id fetched will be lost.
+        # this also play well with banking extra ids
+        my $name_field = $NEXT_ID_CONF->{name_field};
+        my $next_field = $NEXT_ID_CONF->{next_field};
+
+        my (undef, $next) = SELECT_ROW "$next_field AS next FROM $table WHERE $name_field = ?" => [$name];
+
+        if ($next) {
+            UPDATE $table => {
+                $name_field => $name,
+            } => {
+                $next_field => $next + $size,
+            }
+        } else {
+            $next = 1;
+            INSERT $table => {
+                $name_field => $name,
+                $next_field => $next + $size,
+            };
+        }
+
+        return {
+            next => $next,
+            left => $size,
+        };
+    };
+
+    my $next = $pool->{next};
+
+    --$pool->{left} and $pool->{next}++
+        or delete $ids->{$name};
+
+    return $next;
 }
 
 =head1 AUTHOR
