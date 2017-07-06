@@ -544,7 +544,8 @@ sub UPDATE($$$) {
         push @binds, $v;
     }
 
-    $stm .= "UPDATE $tab SET ".join(', ', @sets)." WHERE ".join(' AND ', @conds);
+    $stm .= "UPDATE $tab SET ".join(', ', @sets);
+    $stm .= " WHERE ".join(' AND ', @conds) if @conds;
 
     my $sth = $DBH->prepare($stm);
     my $ct = 0+$sth->execute(@binds);
