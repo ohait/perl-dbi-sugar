@@ -624,14 +624,24 @@ sub UPSERT($$$$) {
 
     use DBI::SUGAR qw/:DEFAULT NEXT_ID/; # not exported by default
 
+    # Optionally, you can change the defaults:
+    Next_ID_settings(
+        "ids", # the name of the table which contains the ids
+        "name", # the name of the field which contains the id names
+        "next", # the name of the field which contains the next id
+        );
+    # this will likely requires you to do something like:
+    # CREATE TABLE ids (name VARCHAR(256), next INTEGER, PRIMARY KEY (name));
+
     my $next_id = NEXT_ID myName => 5;
 
-It first checks if an ID is available in the "pool" for the given name, and returns it.
+It first checks if an ID is already available in the "pool" for the given name, and returns it.
 
 Otherwise it creates a new TX, lock the table, fetches the next id from the table, updates the
 table adding 5 and returns the next, storing the extra ids in the pool for later use
 
-It is important to note that all this happens in a TX_NEW block! which means that even if the
+It is important to note that all this happens in a TX_NEW block! You don't have to do anything,
+just be aware a nested transaction takes place. which means that even if the
 caller die and ROLLBACK, the changes on the id table are committed and won't clases with other
 transactions (they will be wasted)
 
