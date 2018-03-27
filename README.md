@@ -16,29 +16,38 @@ TX {
     => sub {
         $_{id} => join ' ', $_{name}, $_{surname};
     };
+    # %rows => (
+    #   123 => "Adam Smith",
+    #   345 => "John Brown",
+    #   ...
+    # );
 
+    # quite straightforward
     SQL_DO "DELETE FROM myTab ORDER BY id ASC LIMIT ?" => [1];
 
+    # tired of autoincrements or sequences?
     my $next;
-    TX_NEW {
+    TX_NEW { # in a new transaction
+    	# fetch the next id
         (undef, $next) = SELECT_ROW "next FROM ids WHERE type = ?
             FOR UPDATE" => [$type];
+	# update the table
         SQL_DO "UPDATE ids SET next = next + 1 WHERE type = ?" => [$type];
-    };
+    }; # commit
 
+    # insert
     INSERT myTab => {
         id => $next,
         a => "Foo",
         b => "Bar",
     };
 
+    # update
     UPDATE myTab => {
         id => $next,
     } => {
         ct => ['ct + ?', $inc],
     }
-
-    # or even more sugar coating!
 
     my $id = NEXT_ID myTab => 10;
     # reserve 10 ids from table "ids" where name = 'myTab'
