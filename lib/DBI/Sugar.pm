@@ -542,7 +542,7 @@ sub UPDATE($$$) {
     $stm .= "UPDATE $tab SET ".join(', ', @sets);
     $stm .= " WHERE ".join(' AND ', @conds) if @conds;
 
-    my $sth = $DBH->prepare($stm);
+    my $sth = eval { $DBH->prepare($stm); } or die "$@ while $stm";
     my $ct = 0+$sth->execute(@binds);
     #printf "DBG [%d], rows: %d\n", $ct, $sth->rows;
     return $ct;
