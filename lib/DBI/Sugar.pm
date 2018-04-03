@@ -178,7 +178,7 @@ sub _make() {
     $FACTORY or die "you must set DBI::Sugar::factory { ... } first";
     ($DBH, %OPTS) = $FACTORY->();
     $DBH or die "factory returned a null connection";
-    $DBH->{Active} or die "factory returned a non-active connection";
+    #$DBH->{Active} or die "factory returned a non-active connection";
     #print "[$$] _make() => $DBH ($DBH->{AutoCommit})\n";
     $OPTS{commit} //= $OPTS{release} // sub {};
     $OPTS{rollback} //= $OPTS{release} // sub {}
